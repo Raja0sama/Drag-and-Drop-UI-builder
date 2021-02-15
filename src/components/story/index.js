@@ -3,12 +3,15 @@ import * as reactnative from "react-native";
 import Draggable from "react-draggable"; // The default
 import { Card } from "antd";
 import { ZoomInOutlined, ZoomOutOutlined } from "@ant-design/icons";
-import { Canvas } from "reaflow";
+import { connect } from "dva";
 
-export default function Story(props) {
+const Story = (props) => {
   const Recursion = (arr) => {
     return arr.map((e, i) => {
-      const Element = reactnative[e.element];
+      if (!e.element) {
+        return e;
+      }
+      const Element = e.element;
       return (
         <div id={e.props.id}>
           {e.children.length != 0 ? (
@@ -44,32 +47,13 @@ export default function Story(props) {
     setactiveDrag(--a);
   };
   const dragHandlers = { onStart, onStop };
-  const [scale, setscale] = useState(0.7);
+  const [scale, setscale] = useState(0.5);
   const setS = (val) => {
-    console.log({ val });
     setscale(val);
     // document.querySelector(".dgb").children[0].style.transform =
     //   "scale(" + val + ")";
   };
 
-  const nodes = [
-    {
-      id: "1",
-      text: "1",
-    },
-    {
-      id: "2",
-      text: "2",
-    },
-  ];
-
-  const edges = [
-    {
-      id: "1-2",
-      from: "1",
-      to: "2",
-    },
-  ];
   return (
     <Card
       bodyStyle={{ margin: 0, padding: 0 }}
@@ -81,6 +65,10 @@ export default function Story(props) {
       ]}
     >
       <div
+        onWheel={(e) => {
+          e.passive = false;
+          e.preventDefault();
+        }}
         className={"dgb"}
         style={{
           height: "86vh",
@@ -93,8 +81,8 @@ export default function Story(props) {
         <Draggable {...dragHandlers}>
           <div
             style={{
-              width: 300,
-              height: 700,
+              width: 1200,
+              height: 720,
               background: "white",
               border: "1px solid gray",
               zoom: scale,
@@ -103,11 +91,15 @@ export default function Story(props) {
             onDrop={props.drop}
           >
             <reactnative.View style={{ width: "100%", height: "100%" }}>
-              {Recursion(props.code)}
+              {Recursion(props.nodes)}
             </reactnative.View>
           </div>
         </Draggable>
       </div>
     </Card>
   );
-}
+};
+export default connect(({ app }) => {
+  console.log({ app });
+  return { nodes: app.nodes };
+})(Story);

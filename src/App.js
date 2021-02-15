@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as reactnative from "react-native";
 import "./assets/style.css";
 import Layout from "./components/Layout";
 import "antd/dist/antd.css";
-
-export default function App() {
-  const modules = Object.entries(reactnative);
-  const [code, setcode] = useState([]);
+import { connect } from "dva";
+import { setNodes } from "./model/app";
+const App = (props) => {
+  const [code, setcode] = [props.nodes, props.setNodes];
   let text = "";
   const allowDrop = (ev) => {
     ev.preventDefault();
@@ -15,21 +15,22 @@ export default function App() {
   const drag = (ev) => {
     text = ev.target.textContent;
   };
-
+  useEffect(() => {
+    window.addEventListener("click", (e) => {
+      if (document.querySelector("#contextMenu"))
+        if (document.querySelector("#contextMenu").style.display == "block")
+          document.querySelector("#contextMenu").style.display = "none";
+    });
+  }, []);
   const drop = (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
 
     const config = {
       element: text,
-      style: {},
-      children: [],
+      children: [text == "span" && "Span Is being Created"],
       props: {
-        title: "Learn More",
         id: btoa(Math.random()).substr(10, 5),
-        source: {
-          uri: "https://reactnative.dev/img/tiny_logo.png",
-        },
         style: {
           width: 100,
           height: 100,
@@ -61,12 +62,45 @@ export default function App() {
 
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
-      <Layout
-        code={code}
-        drag={drag}
-        drop={drop}
-        allowDrop={allowDrop}
-      ></Layout>
+      <Layout drag={drag} drop={drop} allowDrop={allowDrop}></Layout>
+      <ContextMenu />
     </div>
   );
-}
+};
+const ContextMenu = () => {
+  const menu = [
+    {
+      name: "copy",
+    },
+    {
+      name: "delete",
+    },
+    {
+      name: "duplicate",
+    },
+    {
+      name: "manage style",
+    },
+  ];
+
+  // min-width: 170px !important;
+  //   padding: 3px 15px
+
+  return (
+    <div id={"contextMenu"} style={{ display: "none", position: "absolute" }}>
+      <div className="list-group">
+        {menu.map((e) => (
+          <button
+            style={{ minWidth: 170, padding: "3px 15px" }}
+            type="button"
+            className="list-group-item list-group-item-action "
+          >
+            {e.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default connect(({ app }) => ({ nodes: app.nodes }), { setNodes })(App);

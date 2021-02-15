@@ -13,13 +13,13 @@ export default function Layout(props) {
         subTitle="easy screen maker"
       /> */}
       <Row>
-        <Col span={4}>
+        <Col span={3}>
           <Left {...props} />
         </Col>
         <Col span={16}>
           <Story {...props} />
         </Col>
-        <Col span={4}>
+        <Col span={5}>
           <Right {...props} />
         </Col>
       </Row>

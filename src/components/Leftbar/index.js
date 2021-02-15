@@ -4,6 +4,8 @@ import * as reactnative from "react-native";
 import Button from "antd/lib/button/button";
 import Tree from "@widgetjs/tree";
 import "./../../assets/bs.css";
+import { connect } from "dva";
+import { setSelectedNode } from "../../model/app";
 
 const { Panel } = Collapse;
 
@@ -35,89 +37,151 @@ const LeftBar = (props) => {
         bordered={false}
       >
         <div style={{ height: "40vh", overflow: "auto" }}>
-          <ul class="list-group">
-            {Object.keys(reactnative).map((item, i) => {
-              return (
-                item.match(new RegExp(/^[A-Z]/)) !== null && (
+          <ul className="list-group">
+            {["div", "span", "p", "hr", "h1", "h2", "h3", "img"].map(
+              (item, i) => {
+                return (
                   <li
                     id={item}
+                    style={{ cursor: "pointer" }}
                     onDrag={props.drag}
                     draggable={"true"}
-                    class="list-group-item lii"
+                    className="list-group-item lii"
                   >
                     {item}
                   </li>
-                )
-              );
-            })}
+                );
+              }
+            )}
           </ul>
         </div>
       </Card>
       <Card bodyStyle={{ margin: 0, padding: 0 }} title="Hierarchy">
         <div id={"container"} style={{ height: "40vh", overflow: "auto" }}>
           <ul className="list-group ">
-            <Renderer nodes={props.code} />
+            <Renderer
+              selectedNode={props.selectedNode}
+              setSelectedNode={props.setSelectedNode}
+              nodes={props.nodes}
+              id={undefined}
+            />
           </ul>
         </div>
       </Card>
+      {/* <ContextMenu /> */}
     </div>
   );
 };
 
-export default LeftBar;
+export default connect(
+  ({ app }) => ({ selectedNode: app.selectedNode, nodes: app.nodes }),
+  {
+    setSelectedNode,
+  }
+)(LeftBar);
+
 const Renderer = (props) => {
+  console.log({ props });
   const [state, setstate] = useState("initialState");
-  return props.nodes.map((e, i) => (
-    <>
-      <li
-        className="list-group-item d-flex justify-content-between align-items-center lii"
-        onClick={() => {
-          if (e.children.length > 0) {
-            if (
-              document.querySelector("#" + e.props.id).style.display == "none"
-            ) {
-              document.querySelector("#" + e.props.id).style.display = "block";
-              document
-                .querySelector("#" + e.props.id)
-                .previousElementSibling.classList.add("active");
-            } else {
-              document.querySelector("#" + e.props.id).style.display = "none";
-              document
-                .querySelector("#" + e.props.id)
-                .previousElementSibling.classList.remove("active");
-            }
-            setstate(btoa(Math.random()).substr(10, 5));
-          }
-        }}
-      >
-        <span>
-          {e.children.length == 0 ? (
-            ""
-          ) : document.querySelector("#" + e.props.id).style.display !==
-            "none" ? (
-            <Minus />
-          ) : (
-            <Plus />
+  return (
+    props.nodes &&
+    Array.isArray(props.nodes) &&
+    props.nodes.map((e, i) => {
+      console.log({ e });
+      return (
+        <>
+          <li
+            onContextMenu={(e) => {
+              e.preventDefault();
+              if (
+                document.querySelector("#contextMenu").style.display === "none"
+              ) {
+                document.querySelector(
+                  "#contextMenu"
+                ).style.left = `${e.pageX}px`;
+                document.querySelector(
+                  "#contextMenu"
+                ).style.top = `${e.pageY}px`;
+                return (document.querySelector("#contextMenu").style.display =
+                  "block");
+                console.log("Block");
+              } else {
+                return (document.querySelector("#contextMenu").style.display =
+                  "none");
+
+                console.log("none");
+              }
+              console.log(e);
+            }}
+            id={e.props.id + "li" + i}
+            style={{ cursor: "pointer" }}
+            className="list-group-item d-flex justify-content-between align-items-center lii"
+            onClick={() => {
+              if (e.children.length > 0) {
+                if (
+                  document.querySelector("#" + e.props.id).style.display ==
+                  "none"
+                ) {
+                  document.querySelector("#" + e.props.id).style.display =
+                    "block";
+                  document
+                    .querySelector("#" + e.props.id)
+                    .previousElementSibling.classList.add("active");
+                } else {
+                  document.querySelector("#" + e.props.id).style.display =
+                    "none";
+                  document
+                    .querySelector("#" + e.props.id)
+                    .previousElementSibling.classList.remove("active");
+                }
+                setstate(btoa(Math.random()).substr(10, 5));
+              }
+              props.setSelectedNode(
+                props.id
+                  ? props.id + ":" + e.props.id + ";" + i
+                  : e.props.id + ";" + i
+              );
+            }}
+          >
+            <span>
+              {e.children.length == 0 ? (
+                ""
+              ) : document.querySelector("#" + e.props.id).style.display !==
+                "none" ? (
+                <Minus />
+              ) : (
+                <Plus />
+              )}
+              <span style={{ paddingLeft: 10 }}>{e.element}</span>
+            </span>
+            {e.children.length > 0 && (
+              <span className="badge badge-primary badge-pill">
+                {e.children.length}
+              </span>
+            )}
+          </li>
+          {e.children.length != 0 && (
+            <ul
+              style={{ paddingLeft: 10, display: "none" }}
+              className="list-group"
+              id={e.props.id}
+            >
+              <Renderer
+                selectedNode={props.selectedNode}
+                setSelectedNode={props.setSelectedNode}
+                nodes={e.children}
+                id={
+                  props.id
+                    ? props.id + ":" + e.props.id + ";" + i
+                    : e.props.id + ";" + i
+                }
+              />
+            </ul>
           )}
-          <span style={{ paddingLeft: 10 }}>{e.element}</span>
-        </span>
-        {e.children.length > 0 && (
-          <span class="badge badge-primary badge-pill">
-            {e.children.length}
-          </span>
-        )}
-      </li>
-      {e.children.length != 0 && (
-        <ul
-          style={{ paddingLeft: 10, display: "none" }}
-          className="list-group"
-          id={e.props.id}
-        >
-          <Renderer nodes={e.children} />
-        </ul>
-      )}
-    </>
-  ));
+        </>
+      );
+    })
+  );
 };
 // const Renderer = (props) => {
 //   return props.nodes.map((e) => (
@@ -133,12 +197,6 @@ const Renderer = (props) => {
 //     </>
 //   ));
 // };
-const content = (
-  <div>
-    <p>Content</p>
-    <p>Content</p>
-  </div>
-);
 
 const Plus = () => (
   <svg
@@ -161,7 +219,7 @@ const Minus = () => (
     width="1em"
     height="1em"
     viewBox="0 0 16 16"
-    class="bi bi-dash"
+    className="bi bi-dash"
     fill="currentColor"
     xmlns="http://www.w3.org/2000/svg"
   >
